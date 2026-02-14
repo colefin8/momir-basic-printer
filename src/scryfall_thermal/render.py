@@ -79,12 +79,27 @@ class TextLine:
 
 
 @dataclass
+class RenderSegment:
+    kind: str
+    width: int
+    text: Optional[str] = None
+    font: Optional[ImageFont.ImageFont] = None
+    image: Optional[Image.Image] = None
+
+
+@dataclass
+class RichLine:
+    segments: list[RenderSegment]
+    height: int
+
+
+@dataclass
 class SymbolLine:
     symbols: list[Image.Image]
     height: int
 
 
-Line = Union[TextLine, SymbolLine]
+Line = Union[TextLine, SymbolLine, RichLine]
 
 
 class SymbolRenderer:
@@ -129,6 +144,73 @@ class SymbolRenderer:
         return rows
 
 
+def _split_symbol_tokens(text: str) -> list[str]:
+    if not text:
+        return []
+    parts = re.split(r"(\{[^}]+\}|\s+)", text)
+    return [part for part in parts if part]
+
+
+def _segments_from_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.ImageFont,
+    symbol_renderer: Optional[SymbolRenderer],
+) -> list[RenderSegment]:
+    segments: list[RenderSegment] = []
+    for part in _split_symbol_tokens(text):
+        if part.startswith("{") and part.endswith("}") and len(part) > 2:
+            token = part[1:-1]
+            symbol = symbol_renderer.symbol_for_token(token) if symbol_renderer else None
+            if symbol is not None:
+                segments.append(RenderSegment(kind="symbol", width=symbol.width, image=symbol))
+                continue
+        width = _text_width(draw, part, font)
+        segments.append(RenderSegment(kind="text", width=width, text=part, font=font))
+    return segments
+
+
+def _wrap_rich_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.ImageFont,
+    symbol_renderer: Optional[SymbolRenderer],
+    max_width: int,
+) -> list[RichLine]:
+    segments = _segments_from_text(draw, text, font, symbol_renderer)
+    if not segments:
+        return []
+
+    lines: list[RichLine] = []
+    current: list[RenderSegment] = []
+    width = 0
+    height = _line_height(font)
+
+    for segment in segments:
+        if segment.kind == "text" and segment.text and segment.text.isspace() and not current:
+            continue
+
+        next_width = width + segment.width
+        if current and next_width > max_width:
+            lines.append(RichLine(current, height))
+            current = []
+            width = 0
+            height = _line_height(font)
+            if segment.kind == "text" and segment.text and segment.text.isspace():
+                continue
+
+        current.append(segment)
+        width += segment.width
+        if segment.kind == "symbol" and segment.image is not None:
+            height = max(height, segment.image.height)
+        elif segment.font is not None:
+            height = max(height, _line_height(segment.font))
+
+    if current:
+        lines.append(RichLine(current, height))
+    return lines
+
+
 def _build_text_lines(
     draw: ImageDraw.ImageDraw,
     card: CardInfo,
@@ -166,7 +248,14 @@ def _build_text_lines(
     if card.oracle_text:
         lines.append(TextLine("", font))
         for paragraph in card.oracle_text.split("\n"):
-            lines.extend(TextLine(line, font) for line in _wrap_text(draw, paragraph, font, max_width))
+            if not paragraph:
+                lines.append(TextLine("", font))
+                continue
+            rich_lines = _wrap_rich_text(draw, paragraph, font, symbol_renderer, max_width)
+            if rich_lines:
+                lines.extend(rich_lines)
+            else:
+                lines.extend(TextLine(line, font) for line in _wrap_text(draw, paragraph, font, max_width))
     return lines
 
 
@@ -198,6 +287,8 @@ def render_receipt(card: CardInfo, width_px: int = 384) -> Image.Image:
     for line in lines:
         if isinstance(line, TextLine):
             text_height += _line_height(line.font)
+        elif isinstance(line, SymbolLine):
+            text_height += line.height
         else:
             text_height += line.height
     text_img = Image.new("L", (width_px, text_height), 255)
@@ -208,7 +299,7 @@ def render_receipt(card: CardInfo, width_px: int = 384) -> Image.Image:
         if isinstance(line, TextLine):
             draw.text((margin, y), line.text, font=line.font, fill=0)
             y += _line_height(line.font)
-        else:
+        elif isinstance(line, SymbolLine):
             x = margin
             for symbol in line.symbols:
                 if symbol.mode in ("RGBA", "LA"):
@@ -216,6 +307,20 @@ def render_receipt(card: CardInfo, width_px: int = 384) -> Image.Image:
                 else:
                     text_img.paste(symbol.convert("L"), (x, y))
                 x += symbol.width + (symbol_renderer.spacing if symbol_renderer else 2)
+            y += line.height
+        else:
+            x = margin
+            for segment in line.segments:
+                if segment.kind == "text" and segment.text is not None and segment.font is not None:
+                    draw.text((x, y), segment.text, font=segment.font, fill=0)
+                    x += segment.width
+                elif segment.kind == "symbol" and segment.image is not None:
+                    symbol = segment.image
+                    if symbol.mode in ("RGBA", "LA"):
+                        text_img.paste(symbol.convert("L"), (x, y), symbol.split()[-1])
+                    else:
+                        text_img.paste(symbol.convert("L"), (x, y))
+                    x += segment.width
             y += line.height
 
     image_part = None
