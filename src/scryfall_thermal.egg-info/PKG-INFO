@@ -1,0 +1,65 @@
+Metadata-Version: 2.4
+Name: scryfall-thermal
+Version: 0.1.0
+Summary: Print random Scryfall creatures to ESC/POS thermal printers.
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.31.0
+Requires-Dist: Pillow>=10.2.0
+Requires-Dist: python-escpos>=3.0
+Requires-Dist: cairosvg>=2.7.1
+
+# Scryfall Thermal Printer
+
+Fetch a random MTG creature card from Scryfall by mana value, render a receipt-style image, and print via ESC/POS thermal printers.
+
+## Requirements
+- Python 3.9+
+- A USB or network ESC/POS thermal printer (58mm or 80mm)
+
+## Install
+
+```bash
+cd scryfall-thermal
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+pip install -U pip
+pip install -e .
+```
+
+## Run (CLI prompt)
+
+```bash
+scryfall-thermal
+```
+
+## Run (explicit mana value)
+
+```bash
+scryfall-thermal --mv 3
+```
+
+## Dry-run (save PNG)
+
+```bash
+scryfall-thermal --mv 3 --dry-run --output output.png
+```
+
+## Printer selection
+
+Use `--printer` with one of the following formats:
+
+- USB: `usb:0x1234:0xabcd`
+- Network: `net:192.168.1.50:9100`
+
+Example:
+
+```bash
+scryfall-thermal --mv 2 --printer usb:0x04b8:0x0202
+```
+
+## Notes
+- Default render width is 384px (58mm printers). Use `--width 576` for 80mm printers.
+- If the printer is not connected, use `--dry-run` to validate output.
+- Mana symbols are downloaded from the Scryfall symbology API on first use and cached locally. Set `SCRYFALL_SYMBOLS_DIR` to override the cache directory.

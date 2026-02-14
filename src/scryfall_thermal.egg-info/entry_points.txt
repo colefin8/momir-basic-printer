@@ -1,0 +1,2 @@
+[console_scripts]
+scryfall-thermal = scryfall_thermal.main:main
