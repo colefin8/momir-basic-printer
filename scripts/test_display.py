@@ -30,10 +30,23 @@ def main() -> int:
     parser.add_argument("--min", dest="min_value", type=int, default=0, help="Start value.")
     parser.add_argument("--max", dest="max_value", type=int, default=99, help="End value.")
     parser.add_argument("--delay", type=float, default=0.5, help="Seconds between updates.")
+    parser.add_argument(
+        "--value",
+        type=int,
+        default=None,
+        help="If set, show a fixed value instead of counting.",
+    )
+    parser.add_argument(
+        "--static",
+        action="store_true",
+        help="Show the fixed value and wait (used with --value).",
+    )
     args = parser.parse_args()
 
     if args.max_value < args.min_value:
         raise ValueError("--max must be >= --min")
+    if args.value is not None and not (0 <= args.value <= 99):
+        raise ValueError("--value must be between 0 and 99")
 
     segment_pins = _parse_pin_list(args.seg_pins, expected=8)
     digit_pins = _parse_pin_list(args.digit_pins, expected=2)
@@ -48,7 +61,14 @@ def main() -> int:
 
     display.start()
     try:
-        value = args.min_value
+        if args.value is not None:
+            display.set_value(args.value)
+            if args.static:
+                while True:
+                    time.sleep(1.0)
+            value = args.value
+        else:
+            value = args.min_value
         while True:
             display.set_value(value)
             value = args.min_value if value >= args.max_value else value + 1
