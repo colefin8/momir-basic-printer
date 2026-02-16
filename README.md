@@ -138,6 +138,79 @@ Example:
 scryfall-thermal --mv 2 --printer net:192.168.1.50:9100
 ```
 
+## Hardware mode (Raspberry Pi 3 B)
+
+Use a rotary encoder and a 2-digit 7-segment display (common cathode) to select mana value and trigger printing.
+
+Default GPIO mapping (BCM numbering):
+
+- Encoder A/CLK: GPIO17
+- Encoder B/DT: GPIO18
+- Encoder SW: GPIO27
+- Segments a,b,c,d,e,f,g,dp: GPIO5, GPIO6, GPIO13, GPIO19, GPIO26, GPIO12, GPIO16, GPIO20
+- Digit commons D1,D2: GPIO21, GPIO25
+
+Wiring notes:
+
+- The encoder A/B/SW lines should use pull-ups (gpiozero defaults to pull-ups).
+- Use 220-330 ohm resistors for each segment line.
+- Because this is a bare 2-digit display, you must multiplex the digits.
+- Use NPN transistors (e.g., 2N2222) to switch each digit common cathode.
+
+Run in hardware mode:
+
+```bash
+scryfall-thermal --hardware --dry-run --output output.png
+```
+
+If you have a printer later:
+
+```bash
+scryfall-thermal --hardware --printer usb:0x1234:0xabcd
+```
+
+Override pins if needed:
+
+```bash
+scryfall-thermal --hardware --seg-pins 5,6,13,19,26,12,16,20 --digit-pins 21,25
+```
+
+## Run on startup (systemd)
+
+Create a systemd unit file at `/etc/systemd/system/scryfall-thermal.service`:
+
+```ini
+[Unit]
+Description=Scryfall Thermal Hardware UI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=colefin8
+WorkingDirectory=/home/colefin8/scryfall-thermal
+ExecStart=/home/colefin8/scryfall-thermal/.venv/bin/scryfall-thermal --hardware --dry-run --output /home/colefin8/output.png
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now scryfall-thermal
+```
+
+Check status/logs:
+
+```bash
+systemctl status scryfall-thermal
+journalctl -u scryfall-thermal -b
+```
+
 ## Notes
 
 - Default render width is 384px (58mm printers). Use `--width 576` for 80mm printers.
