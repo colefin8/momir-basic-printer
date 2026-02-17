@@ -268,11 +268,7 @@ def _download_image(url: str, timeout: float = 10.0) -> Image.Image:
 def render_receipt(card: CardInfo, width_px: int = 384) -> Image.Image:
     margin = 10
     font = _load_text_font(size=28)
-    symbol_map: dict[str, Path] = {}
-    try:
-        symbol_map = load_symbol_map()
-    except Exception:
-        symbol_map = {}
+    symbol_map = load_symbol_map()
     symbol_renderer = None
     if symbol_map:
         symbol_renderer = SymbolRenderer(symbol_map, size_px=max(16, _line_height(font) + 2), spacing=2)

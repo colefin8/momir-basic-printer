@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 src/scryfall_thermal/__init__.py
+src/scryfall_thermal/hardware.py
 src/scryfall_thermal/input.py
 src/scryfall_thermal/main.py
 src/scryfall_thermal/print.py

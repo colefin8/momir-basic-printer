@@ -217,3 +217,4 @@ journalctl -u scryfall-thermal -b
 - If the printer is not connected, use `--dry-run` to validate output.
 - A symbology snapshot is bundled at `src/scryfall_thermal/assets/symbology.json` so new clones do not need to fetch the symbol list. PNGs are still downloaded on first use and cached locally. Set `SCRYFALL_SYMBOLS_DIR` to override the cache directory.
 - Refresh the snapshot with: `curl -L https://api.scryfall.com/symbology -o src/scryfall_thermal/assets/symbology.json`
+- Windows: `cairosvg` needs the Cairo DLLs (for example, install MSYS2 and `pacman -S mingw-w64-x86_64-cairo`, then add the MSYS2 `bin` to `PATH`). Ensure `cairo-2.dll` is discoverable before running.
