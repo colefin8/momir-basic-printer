@@ -1,6 +1,6 @@
 # Scryfall Thermal Printer
 
-Prints a random Magic: The Gathering creature by mana value on a thermal printer. This is designed for Momir Basic style play in paper, where you roll or choose a mana value and reveal a random creature to represent the token you get.
+Prints a random Magic: The Gathering creature by mana value on a thermal printer. This is designed for Momir Basic style play in paper, where you get random creatures of different mana values as your only spells.
 
 This tool:
 
