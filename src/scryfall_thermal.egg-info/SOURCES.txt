@@ -14,3 +14,4 @@ src/scryfall_thermal.egg-info/dependency_links.txt
 src/scryfall_thermal.egg-info/entry_points.txt
 src/scryfall_thermal.egg-info/requires.txt
 src/scryfall_thermal.egg-info/top_level.txt
+src/scryfall_thermal/assets/symbology.json
