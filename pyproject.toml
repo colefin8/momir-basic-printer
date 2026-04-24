@@ -15,6 +15,9 @@ dependencies = [
 [project.scripts]
 scryfall-thermal = "scryfall_thermal.main:main"
 
+[tool.setuptools.package-data]
+scryfall_thermal = ["assets/*.json"]
+
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"

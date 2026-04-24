@@ -70,7 +70,10 @@ def _download_symbols(cache_dir: Path, entries: Iterable[dict], timeout: float =
     try:
         import cairosvg
     except Exception as exc:  # pragma: no cover - optional dependency safety
-        raise RuntimeError("cairosvg is required to rasterize Scryfall SVG symbols") from exc
+        raise RuntimeError(
+            "cairosvg is required to rasterize Scryfall SVG symbols. "
+            "Install or fix it with: pip install cairosvg"
+        ) from exc
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     index: Dict[str, str] = {}
