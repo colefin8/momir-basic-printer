@@ -73,13 +73,19 @@ scryfall-thermal --mv 3 --dry-run --output output.png
 
 ### 5) Print to a printer
 
-USB format: `usb:0x1234:0xabcd`
+USB format: `usb:0x1234:0xabcd[?intf=0&out=0x02&in=0x81]`
 Network format: `net:192.168.1.50:9100`
 
 Example:
 
 ```powershell
 scryfall-thermal --mv 2 --printer usb:0x04b8:0x0202
+```
+
+If your printer needs explicit USB endpoints (common on some models):
+
+```powershell
+scryfall-thermal --mv 2 --printer usb:0x0525:0xa4a7?intf=0&out=0x02&in=0x81
 ```
 
 ## Raspberry Pi Lite setup (headless)
@@ -129,13 +135,19 @@ scryfall-thermal --mv 3 --dry-run --output output.png
 
 ### 6) Print to a printer
 
-USB format: `usb:0x1234:0xabcd`
+USB format: `usb:0x1234:0xabcd[?intf=0&out=0x02&in=0x81]`
 Network format: `net:192.168.1.50:9100`
 
 Example:
 
 ```bash
 scryfall-thermal --mv 2 --printer net:192.168.1.50:9100
+```
+
+If your printer needs explicit USB endpoints (common on some models):
+
+```bash
+scryfall-thermal --mv 2 --printer usb:0x0525:0xa4a7?intf=0&out=0x02&in=0x81
 ```
 
 ## Hardware mode (Raspberry Pi 3 B)
@@ -147,15 +159,29 @@ Default GPIO mapping (BCM numbering):
 - Encoder A/CLK: GPIO17
 - Encoder B/DT: GPIO18
 - Encoder SW: GPIO27
-- Segments a,b,c,d,e,f,g,dp: GPIO5, GPIO6, GPIO13, GPIO19, GPIO26, GPIO12, GPIO16, GPIO20
-- Digit commons D1,D2: GPIO21, GPIO25
-
+- Segments 3,9,8,6,7,4,1,2: GPIO5, GPIO6, GPIO13, GPIO19, GPIO26, GPIO12, GPIO16, GPIO20
+- Digit commons 10,5: GPIO21, GPIO25
 Wiring notes:
 
 - The encoder A/B/SW lines should use pull-ups (gpiozero defaults to pull-ups).
 - Use 220-330 ohm resistors for each segment line.
 - Because this is a bare 2-digit display, you must multiplex the digits.
 - Use NPN transistors (e.g., 2N2222) to switch each digit common cathode.
+- TIP120 option: emitter to GND, collector to digit common, base to GPIO through ~1k resistor (Darlington NPN low-side switch).
+
+GPIO backend (gpiozero + lgpio):
+
+Newer Raspberry Pi OS versions disable the legacy /sys/class/gpio interface. Use gpiozero with the lgpio backend.
+
+```bash
+sudo apt install -y python3-gpiozero python3-lgpio
+```
+
+Run once to test:
+
+```bash
+GPIOZERO_PIN_FACTORY=lgpio scryfall-thermal --hardware --dry-run --output output.png
+```
 
 Run in hardware mode:
 
@@ -190,6 +216,7 @@ Type=simple
 User=colefin8
 WorkingDirectory=/home/colefin8/scryfall-thermal
 ExecStart=/home/colefin8/scryfall-thermal/.venv/bin/scryfall-thermal --hardware --dry-run --output /home/colefin8/output.png
+Environment=GPIOZERO_PIN_FACTORY=lgpio
 Restart=on-failure
 RestartSec=2
 
